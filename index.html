@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bubble Tea SLZ - Sistema de Pedidos</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="logo-container">
+            <img src="assets/BubbleLogo.png" alt="Logo Bubble Tea SLZ" class="logo">
+            <h1 class="store-name">Bubble Tea SLZ - Sistema de Pedidos</h1>
+        </div>
+        <nav class="nav-menu">
+            <a href="#" class="nav-link active" id="tab-criar"><i class="fas fa-plus-circle"></i> Gerenciar Pedidos</a>
+            <a href="#" class="nav-link" id="tab-ver"><i class="fas fa-list-alt"></i> Ver Pedidos</a>
+        </nav>
+    </header>
+
+    <main class="main-content">
+        <!-- Aba Criar/Editar Pedido -->
+        <section class="tab-content active" id="criar-pedido">
+            <div class="form-container">
+                <h2 id="form-title"><i class="fas fa-plus-square"></i> Novo Pedido</h2>
+                
+                <form id="pedido-form">
+                    <input type="hidden" id="pedido-id" value="">
+                    
+                    <div class="form-group">
+                        <label for="nome-cliente"><i class="fas fa-user"></i> Nome do Cliente *</label>
+                        <div class="cliente-input">
+                            <input type="text" id="nome-cliente" required placeholder="Digite o nome do cliente">
+                            <span class="input-hint">O pedido será registrado em nome deste cliente</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-mug-hot"></i> Selecionar Chá *</label>
+                        <div class="cha-options">
+                            <div class="cha-card" data-cha="cha-verde">
+                                <div class="cha-image">
+                                    <img src="assets/chaVerde.png" alt="Chá Verde" class="cha-img">
+                                </div>
+                                <div class="cha-info">
+                                    <h3>Chá Verde</h3>
+                                    <p>Chá verde tradicional com pearls de tapioca.</p>
+                                    <div class="cha-selector">
+                                        <input type="radio" id="cha-verde" name="tipo-cha" value="cha-verde" required>
+                                        <label for="cha-verde">Selecionar</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="cha-card" data-cha="manga-morango">
+                                <div class="cha-image">
+                                    <img src="assets/mangaMorango.png" alt="Chá de Manga com Morango" class="cha-img">
+                                </div>
+                                <div class="cha-info">
+                                    <h3>Chá de Manga com Morango</h3>
+                                    <p>Combinação tropical de manga e morango com pearls de fruta.</p>
+                                    <div class="cha-selector">
+                                        <input type="radio" id="manga-morango" name="tipo-cha" value="manga-morango">
+                                        <label for="manga-morango">Selecionar</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="cha-card" data-cha="milk-tea">
+                                <div class="cha-image">
+                                    <img src="assets/milkTea.png" alt="Milk Tea Clássico" class="cha-img">
+                                </div>
+                                <div class="cha-info">
+                                    <h3>Milk Tea Clássico</h3>
+                                    <p>O clássico bubble tea com chá preto, leite e pearls de tapioca.</p>
+                                    <div class="cha-selector">
+                                        <input type="radio" id="milk-tea" name="tipo-cha" value="milk-tea">
+                                        <label for="milk-tea">Selecionar</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-glass-whiskey"></i> Tamanho do Copo *</label>
+                        <div class="tamanho-options">
+                            <div class="tamanho-card" data-tamanho="pequeno">
+                                <input type="radio" id="tamanho-pequeno" name="tamanho" value="pequeno" required>
+                                <label for="tamanho-pequeno">
+                                    <div class="tamanho-icon">
+                                        <i class="fas fa-wine-glass-alt"></i>
+                                    </div>
+                                    <div class="tamanho-info">
+                                        <h4>Pequeno</h4>
+                                        <p>300ml</p>
+                                        <div class="tamanho-preco">R$ 15,00</div>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div class="tamanho-card" data-tamanho="medio">
+                                <input type="radio" id="tamanho-medio" name="tamanho" value="medio">
+                                <label for="tamanho-medio">
+                                    <div class="tamanho-icon">
+                                        <i class="fas fa-wine-glass"></i>
+                                    </div>
+                                    <div class="tamanho-info">
+                                        <h4>Médio</h4>
+                                        <p>500ml</p>
+                                        <div class="tamanho-preco">R$ 17,00</div>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div class="tamanho-card" data-tamanho="grande">
+                                <input type="radio" id="tamanho-grande" name="tamanho" value="grande">
+                                <label for="tamanho-grande">
+                                    <div class="tamanho-icon">
+                                        <i class="fas fa-beer"></i>
+                                    </div>
+                                    <div class="tamanho-info">
+                                        <h4>Grande</h4>
+                                        <p>700ml</p>
+                                        <div class="tamanho-preco">R$ 20,00</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="observacoes"><i class="fas fa-sticky-note"></i> Observações</label>
+                        <textarea id="observacoes" placeholder="Alguma observação especial para o pedido? (opcional)" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-summary">
+                        <div class="summary-header">
+                            <h3><i class="fas fa-receipt"></i> Resumo do Pedido</h3>
+                            <div class="pedido-id-display" id="resumo-id-compra">ID: --</div>
+                        </div>
+                        
+                        <div class="summary-details">
+                            <div class="summary-item">
+                                <span>Cliente:</span>
+                                <span id="resumo-cliente">--</span>
+                            </div>
+                            <div class="summary-item">
+                                <span>Chá:</span>
+                                <span id="resumo-cha">--</span>
+                            </div>
+                            <div class="summary-item">
+                                <span>Tamanho:</span>
+                                <span id="resumo-tamanho">--</span>
+                            </div>
+                            <div class="summary-item">
+                                <span>Preço:</span>
+                                <span id="resumo-preco">R$ 0,00</span>
+                            </div>
+                        </div>
+                        
+                        <div class="summary-total">
+                            <span>Total a Pagar:</span>
+                            <span id="resumo-total">R$ 0,00</span>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="btn-cancelar" style="display: none;">
+                            <i class="fas fa-times"></i> Cancelar Edição
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="btn-limpar">
+                            <i class="fas fa-broom"></i> Limpar
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="btn-submit">
+                            <i class="fas fa-check-circle"></i> Criar Pedido
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- Aba Ver Pedidos -->
+        <section class="tab-content" id="ver-pedidos">
+            <div class="pedidos-container">
+                <div class="pedidos-header">
+                    <h2><i class="fas fa-clipboard-list"></i> Pedidos Registrados</h2>
+                    <div class="pedidos-filters">
+                        <div class="filter-group">
+                            <label for="filter-cliente"><i class="fas fa-search"></i> Buscar:</label>
+                            <input type="text" id="filter-cliente" placeholder="Nome do cliente ou ID">
+                        </div>
+                        <div class="filter-group">
+                            <label for="filter-status"><i class="fas fa-filter"></i> Status:</label>
+                            <select id="filter-status">
+                                <option value="all">Todos</option>
+                                <option value="pendente">Pendentes</option>
+                                <option value="preparando">Preparando</option>
+                                <option value="pronto">Prontos</option>
+                                <option value="entregue">Entregues</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filter-data"><i class="fas fa-calendar"></i> Data:</label>
+                            <select id="filter-data">
+                                <option value="all">Todas</option>
+                                <option value="hoje">Hoje</option>
+                                <option value="ontem">Ontem</option>
+                                <option value="semana">Esta semana</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-small" id="btn-atualizar">
+                            <i class="fas fa-sync-alt"></i> Atualizar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pedidos-grid" id="pedidos-grid">
+                    <!-- Pedidos serão carregados aqui -->
+                    <div class="no-pedidos" id="no-pedidos">
+                        <i class="fas fa-mug-hot"></i>
+                        <h3>Nenhum pedido registrado</h3>
+                        <p>Crie seu primeiro pedido na aba "Gerenciar Pedidos"</p>
+                    </div>
+                </div>
+
+                <div class="pedidos-summary">
+                    <div class="summary-stats">
+                        <div class="stat">
+                            <span class="stat-value" id="total-pedidos">0</span>
+                            <span class="stat-label">Total de Pedidos</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value" id="pedidos-hoje">0</span>
+                            <span class="stat-label">Hoje</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value" id="receita-hoje">R$ 0,00</span>
+                            <span class="stat-label">Receita Hoje</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value" id="total-receita">R$ 0,00</span>
+                            <span class="stat-label">Receita Total</span>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-actions">
+                        <button class="btn btn-danger" id="btn-limpar-todos">
+                            <i class="fas fa-trash-alt"></i> Limpar Todos os Pedidos
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-info">
+                <span><i class="fas fa-cogs"></i> Sistema de Pedidos v2.0 - CRUD Completo</span>
+                <span><i class="fas fa-clock"></i> <span id="data-hora">--:--:--</span></span>
+            </div>
+            <div class="footer-copyright">
+                <p>© 2023 Bubble Tea SLZ - Sistema de Gerenciamento de Pedidos</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
