@@ -1,161 +1,254 @@
-// Sistema de Pedidos Bubble Tea SLZ - CRUD Completo
+// Sistema de Pedidos Bubble Tea SLZ - CRUD Completo com API REST
+
+class APIService {
+    constructor() {
+        this.baseURL = 'http://localhost:8080/api';
+    }
+
+    async fazerRequisicao(endpoint, metodo = 'GET', dados = null) {
+        const url = `${this.baseURL}${endpoint}`;
+        const config = {
+            method: metodo,
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        };
+
+        if (dados && (metodo === 'POST' || metodo === 'PUT' || metodo === 'PATCH')) {
+            config.body = JSON.stringify(dados);
+        }
+
+        try {
+            const resposta = await fetch(url, config);
+            
+            if (!resposta.ok) {
+                const erro = await resposta.json();
+                throw new Error(erro.message || `Erro HTTP: ${resposta.status}`);
+            }
+
+            // Para DELETE que retorna 204 (No Content)
+            if (resposta.status === 204) {
+                return null;
+            }
+
+            return await resposta.json();
+        } catch (error) {
+            console.error('Erro na requisição:', error);
+            throw error;
+        }
+    }
+}
 
 class PedidoService {
     constructor() {
-        this.pedidos = [];
-        this.proximoId = 1;
-        this.init();
-    }
-
-    async init() {
-        await this.carregarPedidos();
+        this.apiService = new APIService();
     }
 
     // CREATE
     async criarPedido(pedidoData) {
-        const idCompra = `BTS${this.proximoId.toString().padStart(4, '0')}${new Date().getFullYear().toString().substr(-2)}`;
-        
-        const pedido = {
-            id: this.proximoId++,
-            idCompra,
-            ...pedidoData,
-            data: new Date().toISOString(),
-            status: 'pendente',
-            dataStatus: new Date().toISOString()
+        // Mapear valores do frontend para o backend
+        const pedidoRequest = {
+            cliente: pedidoData.cliente,
+            tipoCha: this.mapearTipoChaParaBackend(pedidoData.cha),
+            tamanho: this.mapearTamanhoParaBackend(pedidoData.tamanho),
+            observacoes: pedidoData.observacoes || '',
+            preco: pedidoData.preco
         };
-        
-        this.pedidos.push(pedido);
-        await this.salvarPedidos();
-        return pedido;
+
+        return await this.apiService.fazerRequisicao('/pedidos', 'POST', pedidoRequest);
     }
 
     // READ
     async listarPedidos(filtros = {}) {
-        let pedidosFiltrados = [...this.pedidos];
+        const params = new URLSearchParams();
         
-        // Filtrar por cliente
         if (filtros.cliente) {
-            const termo = filtros.cliente.toLowerCase();
-            pedidosFiltrados = pedidosFiltrados.filter(p => 
-                p.cliente.toLowerCase().includes(termo) || 
-                p.idCompra.toLowerCase().includes(termo)
-            );
+            params.append('cliente', filtros.cliente);
         }
         
-        // Filtrar por status
         if (filtros.status && filtros.status !== 'all') {
-            pedidosFiltrados = pedidosFiltrados.filter(p => p.status === filtros.status);
+            params.append('status', this.mapearStatusParaBackend(filtros.status));
         }
         
-        // Filtrar por data
         if (filtros.data && filtros.data !== 'all') {
-            const hoje = new Date();
-            pedidosFiltrados = pedidosFiltrados.filter(p => {
-                const dataPedido = new Date(p.data);
-                
-                switch(filtros.data) {
-                    case 'hoje':
-                        return dataPedido.toDateString() === hoje.toDateString();
-                    case 'ontem':
-                        const ontem = new Date(hoje);
-                        ontem.setDate(ontem.getDate() - 1);
-                        return dataPedido.toDateString() === ontem.toDateString();
-                    case 'semana':
-                        const semanaPassada = new Date(hoje);
-                        semanaPassada.setDate(semanaPassada.getDate() - 7);
-                        return dataPedido >= semanaPassada;
-                    default:
-                        return true;
-                }
-            });
+            const data = this.obterDataParaFiltro(filtros.data);
+            if (data) {
+                params.append('data', data);
+            }
         }
         
-        // Ordenar por data (mais recente primeiro)
-        return pedidosFiltrados.sort((a, b) => new Date(b.data) - new Date(a.data));
+        const queryString = params.toString();
+        const endpoint = queryString ? `/pedidos?${queryString}` : '/pedidos';
+        
+        const pedidos = await this.apiService.fazerRequisicao(endpoint);
+        
+        // Mapear resposta do backend para frontend
+        return pedidos.map(pedido => this.mapearPedidoParaFrontend(pedido));
     }
 
     async buscarPedidoPorId(id) {
-        return this.pedidos.find(p => p.id === id);
+        const pedido = await this.apiService.fazerRequisicao(`/pedidos/${id}`);
+        return this.mapearPedidoParaFrontend(pedido);
     }
 
-    // UPDATE
+    // UPDATE - AGORA ATUALIZA TUDO (cliente, tipoCha, tamanho, observacoes)
     async atualizarPedido(id, dadosAtualizados) {
-        const index = this.pedidos.findIndex(p => p.id === id);
-        if (index === -1) return null;
-        
-        this.pedidos[index] = {
-            ...this.pedidos[index],
-            ...dadosAtualizados,
-            dataStatus: new Date().toISOString()
+        const atualizacaoRequest = {
+            cliente: dadosAtualizados.cliente,
+            tipoCha: dadosAtualizados.tipoCha,  // NOVO: tipo de chá
+            tamanho: dadosAtualizados.tamanho,  // NOVO: tamanho
+            observacoes: dadosAtualizados.observacoes || ''
         };
-        
-        await this.salvarPedidos();
-        return this.pedidos[index];
+
+        const pedidoAtualizado = await this.apiService.fazerRequisicao(
+            `/pedidos/${id}`, 
+            'PUT', 
+            atualizacaoRequest
+        );
+        return this.mapearPedidoParaFrontend(pedidoAtualizado);
     }
 
     async atualizarStatusPedido(id, novoStatus) {
-        return this.atualizarPedido(id, { status: novoStatus });
+        const statusBackend = this.mapearStatusParaBackend(novoStatus);
+        const pedidoAtualizado = await this.apiService.fazerRequisicao(
+            `/pedidos/${id}/status?novoStatus=${statusBackend}`,
+            'PATCH'
+        );
+        return this.mapearPedidoParaFrontend(pedidoAtualizado);
     }
 
     // DELETE
     async excluirPedido(id) {
-        const index = this.pedidos.findIndex(p => p.id === id);
-        if (index === -1) return false;
-        
-        const pedidoExcluido = this.pedidos[index];
-        this.pedidos.splice(index, 1);
-        await this.salvarPedidos();
-        
-        return pedidoExcluido;
+        await this.apiService.fazerRequisicao(`/pedidos/${id}`, 'DELETE');
+        return { id };
     }
 
     async limparTodosPedidos() {
-        const quantidade = this.pedidos.length;
-        this.pedidos = [];
-        this.proximoId = 1;
-        await this.salvarPedidos();
-        return quantidade;
-    }
-
-    // Métodos auxiliares
-    async carregarPedidos() {
-        const dados = localStorage.getItem('bubbleTeaPedidos');
-        if (dados) {
-            const parsed = JSON.parse(dados);
-            this.pedidos = parsed.pedidos || [];
-            this.proximoId = parsed.proximoId || 1;
+        // Não existe endpoint para limpar todos, então vamos excluir um por um
+        const pedidos = await this.listarPedidos();
+        for (const pedido of pedidos) {
+            await this.excluirPedido(pedido.id);
         }
-    }
-
-    async salvarPedidos() {
-        const dados = {
-            pedidos: this.pedidos,
-            proximoId: this.proximoId
-        };
-        localStorage.setItem('bubbleTeaPedidos', JSON.stringify(dados));
+        return pedidos.length;
     }
 
     // Métodos de relatório
     async obterEstatisticas() {
-        const hoje = new Date().toDateString();
-        const pedidosHoje = this.pedidos.filter(p => 
-            new Date(p.data).toDateString() === hoje
-        );
-        
-        const total = this.pedidos.length;
-        const hojeCount = pedidosHoje.length;
-        const receitaTotal = this.pedidos.reduce((sum, p) => sum + p.preco, 0);
-        const receitaHoje = pedidosHoje.reduce((sum, p) => sum + p.preco, 0);
-        
-        return {
-            total,
-            hoje: hojeCount,
-            receitaTotal,
-            receitaHoje
+        try {
+            const estatisticas = await this.apiService.fazerRequisicao('/pedidos/estatisticas');
+            return {
+                total: estatisticas.totalPedidos || 0,
+                hoje: estatisticas.pedidosHoje || 0,
+                receitaTotal: estatisticas.receitaTotal || 0,
+                receitaHoje: estatisticas.receitaHoje || 0
+            };
+        } catch (error) {
+            console.warn('Erro ao obter estatísticas, retornando valores padrão:', error);
+            return {
+                total: 0,
+                hoje: 0,
+                receitaTotal: 0,
+                receitaHoje: 0
+            };
+        }
+    }
+
+    // Métodos auxiliares de mapeamento
+    mapearTipoChaParaBackend(chaFrontend) {
+        const mapeamento = {
+            'cha-verde': 'CHA_VERDE',
+            'manga-morango': 'MANGA_MORANGO',
+            'milk-tea': 'MILK_TEA'
         };
+        return mapeamento[chaFrontend] || 'CHA_VERDE';
+    }
+
+    mapearTipoChaParaFrontend(chaBackend) {
+        const mapeamento = {
+            'CHA_VERDE': 'cha-verde',
+            'MANGA_MORANGO': 'manga-morango',
+            'MILK_TEA': 'milk-tea'
+        };
+        return mapeamento[chaBackend] || 'cha-verde';
+    }
+
+    mapearTamanhoParaBackend(tamanhoFrontend) {
+        const mapeamento = {
+            'pequeno': 'PEQUENO',
+            'medio': 'MEDIO',
+            'grande': 'GRANDE'
+        };
+        return mapeamento[tamanhoFrontend] || 'MEDIO';
+    }
+
+    mapearTamanhoParaFrontend(tamanhoBackend) {
+        const mapeamento = {
+            'PEQUENO': 'pequeno',
+            'MEDIO': 'medio',
+            'GRANDE': 'grande'
+        };
+        return mapeamento[tamanhoBackend] || 'medio';
+    }
+
+    mapearStatusParaBackend(statusFrontend) {
+        const mapeamento = {
+            'pendente': 'PENDENTE',
+            'preparando': 'PREPARANDO',
+            'pronto': 'PRONTO',
+            'entregue': 'ENTREGUE',
+            'cancelado': 'CANCELADO'
+        };
+        return mapeamento[statusFrontend] || 'PENDENTE';
+    }
+
+    mapearStatusParaFrontend(statusBackend) {
+        const mapeamento = {
+            'PENDENTE': 'pendente',
+            'PREPARANDO': 'preparando',
+            'PRONTO': 'pronto',
+            'ENTREGUE': 'entregue',
+            'CANCELADO': 'cancelado'
+        };
+        return mapeamento[statusBackend] || 'pendente';
+    }
+
+    mapearPedidoParaFrontend(pedidoBackend) {
+        return {
+            id: pedidoBackend.id,
+            idCompra: pedidoBackend.idCompra,
+            cliente: pedidoBackend.cliente,
+            cha: this.mapearTipoChaParaFrontend(pedidoBackend.tipoCha),
+            tamanho: this.mapearTamanhoParaFrontend(pedidoBackend.tamanho),
+            preco: pedidoBackend.preco,
+            observacoes: pedidoBackend.observacoes || '',
+            status: this.mapearStatusParaFrontend(pedidoBackend.status),
+            data: pedidoBackend.dataCriacao,
+            dataStatus: pedidoBackend.dataAtualizacao
+        };
+    }
+
+    obterDataParaFiltro(tipoFiltro) {
+        const hoje = new Date();
+        
+        switch(tipoFiltro) {
+            case 'hoje':
+                return hoje.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+            case 'ontem':
+                const ontem = new Date(hoje);
+                ontem.setDate(ontem.getDate() - 1);
+                return ontem.toISOString().split('T')[0];
+            case 'semana':
+                const semanaPassada = new Date(hoje);
+                semanaPassada.setDate(semanaPassada.getDate() - 7);
+                return semanaPassada.toISOString().split('T')[0];
+            default:
+                return null;
+        }
     }
 }
 
+// ToastService permanece igual
 class ToastService {
     constructor() {
         this.toastCount = 0;
@@ -334,7 +427,8 @@ class PedidoController {
             'pendente': { nome: 'Pendente', cor: '#ff9800', icon: 'fa-clock' },
             'preparando': { nome: 'Preparando', cor: '#2196f3', icon: 'fa-blender' },
             'pronto': { nome: 'Pronto', cor: '#4caf50', icon: 'fa-check' },
-            'entregue': { nome: 'Entregue', cor: '#9c27b0', icon: 'fa-mug-hot' }
+            'entregue': { nome: 'Entregue', cor: '#9c27b0', icon: 'fa-mug-hot' },
+            'cancelado': { nome: 'Cancelado', cor: '#f44336', icon: 'fa-times' }
         };
     }
 
@@ -402,9 +496,8 @@ class PedidoController {
     }
 
     async inicializar() {
-        await this.pedidoService.init();
         this.atualizarResumo();
-        this.atualizarInterface();
+        await this.atualizarInterface();
     }
 
     // Navegação
@@ -521,13 +614,22 @@ class PedidoController {
             let resultado;
             
             if (this.modoEdicao) {
-                resultado = await this.pedidoService.atualizarPedido(this.pedidoEditando.id, pedidoData);
+                // Para edição, envie TODOS os dados para o backend
+                const dadosAtualizacao = {
+                    cliente: pedidoData.cliente,
+                    tipoCha: this.pedidoService.mapearTipoChaParaBackend(pedidoData.cha),
+                    tamanho: this.pedidoService.mapearTamanhoParaBackend(pedidoData.tamanho),
+                    observacoes: pedidoData.observacoes
+                };
+                
+                resultado = await this.pedidoService.atualizarPedido(this.pedidoEditando.id, dadosAtualizacao);
                 this.toastService.mostrar(
                     `Pedido ${resultado.idCompra} atualizado com sucesso!`,
                     'sucesso'
                 );
                 this.cancelarEdicao();
             } else {
+                // Criação normal
                 resultado = await this.pedidoService.criarPedido(pedidoData);
                 this.toastService.mostrar(
                     `Pedido ${resultado.idCompra} criado com sucesso!<br>
@@ -552,22 +654,48 @@ class PedidoController {
         this.modoEdicao = true;
         this.pedidoEditando = pedido;
         
-        // Preencher formulário
+        // Preencher formulário COMPLETO
         this.pedidoId.value = pedido.id;
         this.nomeCliente.value = pedido.cliente;
         this.observacoes.value = pedido.observacoes || '';
         
-        // Selecionar chá
-        document.querySelector(`input[value="${pedido.cha}"]`).checked = true;
+        // CORREÇÃO: Selecionar chá CORRETAMENTE
+        // Mapeia do frontend para o valor do radio button
+        const chaMap = {
+            'cha-verde': 'cha-verde',
+            'manga-morango': 'manga-morango', 
+            'milk-tea': 'milk-tea',
+            'CHA_VERDE': 'cha-verde',
+            'MANGA_MORANGO': 'manga-morango',
+            'MILK_TEA': 'milk-tea'
+        };
         
-        // Selecionar tamanho
-        document.querySelector(`input[value="${pedido.tamanho}"]`).checked = true;
+        const chaValue = chaMap[pedido.cha] || 'cha-verde';
+        document.querySelectorAll('input[name="tipo-cha"]').forEach(radio => {
+            radio.checked = (radio.value === chaValue);
+        });
+        
+        // CORREÇÃO: Selecionar tamanho CORRETAMENTE
+        const tamanhoMap = {
+            'pequeno': 'pequeno',
+            'medio': 'medio',
+            'grande': 'grande',
+            'PEQUENO': 'pequeno',
+            'MEDIO': 'medio',
+            'GRANDE': 'grande'
+        };
+        
+        const tamanhoValue = tamanhoMap[pedido.tamanho] || 'medio';
+        document.querySelectorAll('input[name="tamanho"]').forEach(radio => {
+            radio.checked = (radio.value === tamanhoValue);
+        });
         
         // Atualizar interface
         this.formTitle.innerHTML = '<i class="fas fa-edit"></i> Editar Pedido';
         this.btnSubmit.innerHTML = '<i class="fas fa-save"></i> Salvar Alterações';
         this.btnCancelar.style.display = 'inline-flex';
         
+        // Atualizar resumo com os NOVOS valores
         this.atualizarResumo();
         this.atualizarSelecaoCha();
         this.mostrarAba('criar');
@@ -673,6 +801,7 @@ class PedidoController {
                             <option value="preparando" ${pedido.status === 'preparando' ? 'selected' : ''}>Preparando</option>
                             <option value="pronto" ${pedido.status === 'pronto' ? 'selected' : ''}>Pronto</option>
                             <option value="entregue" ${pedido.status === 'entregue' ? 'selected' : ''}>Entregue</option>
+                            <option value="cancelado" ${pedido.status === 'cancelado' ? 'selected' : ''}>Cancelado</option>
                         </select>
                     </div>
                     <button class="action-btn edit-btn" data-id="${pedido.id}" title="Editar pedido">
@@ -705,7 +834,7 @@ class PedidoController {
                     `Status do pedido ${pedidoAtualizado.idCompra} atualizado para: ${this.statusInfo[novoStatus].nome}`,
                     'info'
                 );
-                await this.atualizarInterface();
+                await this.atualizarListaPedidos();
             }
         } catch (error) {
             this.toastService.mostrar(`Erro ao atualizar status: ${error.message}`, 'erro');
@@ -718,7 +847,7 @@ class PedidoController {
                 const pedidoExcluido = await this.pedidoService.excluirPedido(id);
                 if (pedidoExcluido) {
                     this.toastService.mostrar(
-                        `Pedido ${pedidoExcluido.idCompra} excluído com sucesso!`,
+                        `Pedido excluído com sucesso!`,
                         'aviso'
                     );
                     await this.atualizarInterface();
@@ -730,23 +859,23 @@ class PedidoController {
     }
 
     async limparTodosPedidos() {
-        const quantidade = await this.pedidoService.obterEstatisticas();
-        if (quantidade.total === 0) {
-            this.toastService.mostrar('Não há pedidos para limpar.', 'info');
-            return;
-        }
-        
-        if (confirm(`Tem certeza que deseja excluir TODOS os ${quantidade.total} pedidos? Esta ação não pode ser desfeita.`)) {
-            try {
+        try {
+            const estatisticas = await this.pedidoService.obterEstatisticas();
+            if (estatisticas.total === 0) {
+                this.toastService.mostrar('Não há pedidos para limpar.', 'info');
+                return;
+            }
+            
+            if (confirm(`Tem certeza que deseja excluir TODOS os ${estatisticas.total} pedidos? Esta ação não pode ser desfeita.`)) {
                 const quantidadeExcluida = await this.pedidoService.limparTodosPedidos();
                 this.toastService.mostrar(
                     `${quantidadeExcluida} pedidos foram removidos com sucesso!`,
                     'aviso'
                 );
                 await this.atualizarInterface();
-            } catch (error) {
-                this.toastService.mostrar(`Erro ao limpar pedidos: ${error.message}`, 'erro');
             }
+        } catch (error) {
+            this.toastService.mostrar(`Erro ao limpar pedidos: ${error.message}`, 'erro');
         }
     }
 
