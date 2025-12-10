@@ -1,5 +1,3 @@
-// Sistema de Pedidos Bubble Tea SLZ - CRUD Completo com API REST
-
 class APIService {
     constructor() {
         this.baseURL = 'http://localhost:8080/api';
@@ -27,7 +25,6 @@ class APIService {
                 throw new Error(erro.message || `Erro HTTP: ${resposta.status}`);
             }
 
-            // Para DELETE que retorna 204 (No Content)
             if (resposta.status === 204) {
                 return null;
             }
@@ -45,9 +42,9 @@ class PedidoService {
         this.apiService = new APIService();
     }
 
-    // CREATE
+
     async criarPedido(pedidoData) {
-        // Mapear valores do frontend para o backend
+
         const pedidoRequest = {
             cliente: pedidoData.cliente,
             tipoCha: this.mapearTipoChaParaBackend(pedidoData.cha),
@@ -59,7 +56,6 @@ class PedidoService {
         return await this.apiService.fazerRequisicao('/pedidos', 'POST', pedidoRequest);
     }
 
-    // READ
     async listarPedidos(filtros = {}) {
         const params = new URLSearchParams();
         
@@ -83,7 +79,6 @@ class PedidoService {
         
         const pedidos = await this.apiService.fazerRequisicao(endpoint);
         
-        // Mapear resposta do backend para frontend
         return pedidos.map(pedido => this.mapearPedidoParaFrontend(pedido));
     }
 
@@ -92,12 +87,11 @@ class PedidoService {
         return this.mapearPedidoParaFrontend(pedido);
     }
 
-    // UPDATE - AGORA ATUALIZA TUDO (cliente, tipoCha, tamanho, observacoes)
     async atualizarPedido(id, dadosAtualizados) {
         const atualizacaoRequest = {
-            cliente: dadosAtualizados.cliente,
-            tipoCha: dadosAtualizados.tipoCha,  // NOVO: tipo de chá
-            tamanho: dadosAtualizados.tamanho,  // NOVO: tamanho
+            cliente: dadosAtualizados.cliente,              //atualizar os dados do pedido
+            tipoCha: dadosAtualizados.tipoCha,
+            tamanho: dadosAtualizados.tamanho,
             observacoes: dadosAtualizados.observacoes || ''
         };
 
@@ -118,14 +112,12 @@ class PedidoService {
         return this.mapearPedidoParaFrontend(pedidoAtualizado);
     }
 
-    // DELETE
     async excluirPedido(id) {
         await this.apiService.fazerRequisicao(`/pedidos/${id}`, 'DELETE');
         return { id };
     }
 
     async limparTodosPedidos() {
-        // Não existe endpoint para limpar todos, então vamos excluir um por um
         const pedidos = await this.listarPedidos();
         for (const pedido of pedidos) {
             await this.excluirPedido(pedido.id);
@@ -133,7 +125,6 @@ class PedidoService {
         return pedidos.length;
     }
 
-    // Métodos de relatório
     async obterEstatisticas() {
         try {
             const estatisticas = await this.apiService.fazerRequisicao('/pedidos/estatisticas');
@@ -154,7 +145,6 @@ class PedidoService {
         }
     }
 
-    // Métodos auxiliares de mapeamento
     mapearTipoChaParaBackend(chaFrontend) {
         const mapeamento = {
             'cha-verde': 'CHA_VERDE',
@@ -216,15 +206,13 @@ class PedidoService {
     mapearPedidoParaFrontend(pedidoBackend) {
         return {
             id: pedidoBackend.id,
-            idCompra: pedidoBackend.idCompra,
             cliente: pedidoBackend.cliente,
             cha: this.mapearTipoChaParaFrontend(pedidoBackend.tipoCha),
             tamanho: this.mapearTamanhoParaFrontend(pedidoBackend.tamanho),
             preco: pedidoBackend.preco,
             observacoes: pedidoBackend.observacoes || '',
             status: this.mapearStatusParaFrontend(pedidoBackend.status),
-            data: pedidoBackend.dataCriacao,
-            dataStatus: pedidoBackend.dataAtualizacao
+            data: pedidoBackend.dataPedido  
         };
     }
 
@@ -233,7 +221,7 @@ class PedidoService {
         
         switch(tipoFiltro) {
             case 'hoje':
-                return hoje.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+                return hoje.toISOString().split('T')[0]; 
             case 'ontem':
                 const ontem = new Date(hoje);
                 ontem.setDate(ontem.getDate() - 1);
@@ -248,7 +236,6 @@ class PedidoService {
     }
 }
 
-// ToastService permanece igual
 class ToastService {
     constructor() {
         this.toastCount = 0;
@@ -354,13 +341,11 @@ class PedidoController {
     }
 
     inicializarElementos() {
-        // Navegação
         this.tabCriar = document.getElementById('tab-criar');
         this.tabVer = document.getElementById('tab-ver');
         this.criarPedidoSection = document.getElementById('criar-pedido');
         this.verPedidosSection = document.getElementById('ver-pedidos');
         
-        // Formulário
         this.pedidoForm = document.getElementById('pedido-form');
         this.pedidoId = document.getElementById('pedido-id');
         this.nomeCliente = document.getElementById('nome-cliente');
@@ -368,43 +353,36 @@ class PedidoController {
         this.tipoChaRadios = document.querySelectorAll('input[name="tipo-cha"]');
         this.tamanhoRadios = document.querySelectorAll('input[name="tamanho"]');
         
-        // Resumo
+        
         this.formTitle = document.getElementById('form-title');
-        this.resumoIdCompra = document.getElementById('resumo-id-compra');
         this.resumoCliente = document.getElementById('resumo-cliente');
-        this.resumoCha = document.getElementById('resumo-cha');
+        this.resumoCha = document.getElementById('resumo-cha');                 // Resumo do pedido
         this.resumoTamanho = document.getElementById('resumo-tamanho');
         this.resumoPreco = document.getElementById('resumo-preco');
         this.resumoTotal = document.getElementById('resumo-total');
         
-        // Botões do formulário
+        
         this.btnSubmit = document.getElementById('btn-submit');
-        this.btnCancelar = document.getElementById('btn-cancelar');
+        this.btnCancelar = document.getElementById('btn-cancelar');             // Botões do formulário
         this.btnLimpar = document.getElementById('btn-limpar');
         
-        // Lista de pedidos
-        this.pedidosGrid = document.getElementById('pedidos-grid');
+        
+        this.pedidosGrid = document.getElementById('pedidos-grid');         // Lista de pedidos
         this.noPedidos = document.getElementById('no-pedidos');
         
-        // Filtros
+
         this.filterCliente = document.getElementById('filter-cliente');
         this.filterStatus = document.getElementById('filter-status');
-        this.filterData = document.getElementById('filter-data');
+        this.filterData = document.getElementById('filter-data');               //filtros
         this.btnAtualizar = document.getElementById('btn-atualizar');
         
-        // Estatísticas
         this.totalPedidos = document.getElementById('total-pedidos');
         this.pedidosHoje = document.getElementById('pedidos-hoje');
         this.receitaHoje = document.getElementById('receita-hoje');
         this.totalReceita = document.getElementById('total-receita');
         
-        // Botões de ação
         this.btnLimparTodos = document.getElementById('btn-limpar-todos');
-        
-        // Data/Hora
-        this.dataHora = document.getElementById('data-hora');
-        
-        // Dados auxiliares
+    
         this.chaNomes = {
             'cha-verde': 'Chá Verde',
             'manga-morango': 'Chá de Manga com Morango',
@@ -433,7 +411,6 @@ class PedidoController {
     }
 
     configurarEventos() {
-        // Navegação
         this.tabCriar.addEventListener('click', (e) => {
             e.preventDefault();
             this.mostrarAba('criar');
@@ -443,14 +420,11 @@ class PedidoController {
             e.preventDefault();
             this.mostrarAba('ver');
         });
-
-        // Formulário
         this.pedidoForm.addEventListener('submit', (e) => {
             e.preventDefault();
             this.salvarPedido();
         });
 
-        // Atualização em tempo real
         this.nomeCliente.addEventListener('input', () => this.atualizarResumo());
         this.observacoes.addEventListener('input', () => this.atualizarResumo());
         
@@ -464,8 +438,6 @@ class PedidoController {
         this.tamanhoRadios.forEach(radio => {
             radio.addEventListener('change', () => this.atualizarResumo());
         });
-
-        // Cards de chá
         document.querySelectorAll('.cha-card').forEach(card => {
             card.addEventListener('click', () => {
                 const radio = card.querySelector('input[type="radio"]');
@@ -477,30 +449,22 @@ class PedidoController {
             });
         });
 
-        // Botões do formulário
+                                        // Botões 
         this.btnCancelar.addEventListener('click', () => this.cancelarEdicao());
         this.btnLimpar.addEventListener('click', () => this.limparFormulario());
-
-        // Filtros
         this.filterCliente.addEventListener('input', () => this.atualizarListaPedidos());
         this.filterStatus.addEventListener('change', () => this.atualizarListaPedidos());
         this.filterData.addEventListener('change', () => this.atualizarListaPedidos());
         this.btnAtualizar.addEventListener('click', () => this.atualizarListaPedidos());
-
-        // Botões de ação
         this.btnLimparTodos.addEventListener('click', () => this.limparTodosPedidos());
-
-        // Data/Hora
-        this.atualizarDataHora();
-        setInterval(() => this.atualizarDataHora(), 1000);
     }
 
     async inicializar() {
         this.atualizarResumo();
+        this.atualizarSelecaoCha();
         await this.atualizarInterface();
     }
 
-    // Navegação
     mostrarAba(aba) {
         this.tabCriar.classList.remove('active');
         this.tabVer.classList.remove('active');
@@ -517,7 +481,6 @@ class PedidoController {
         }
     }
 
-    // Formulário
     atualizarSelecaoCha() {
         document.querySelectorAll('.cha-card').forEach(card => {
             card.classList.remove('selected');
@@ -529,11 +492,10 @@ class PedidoController {
     }
 
     atualizarResumo() {
-        // Cliente
         const cliente = this.nomeCliente.value.trim() || '--';
         this.resumoCliente.textContent = cliente;
         
-        // Chá
+
         let chaSelecionado = '--';
         this.tipoChaRadios.forEach(radio => {
             if (radio.checked) {
@@ -542,7 +504,6 @@ class PedidoController {
         });
         this.resumoCha.textContent = chaSelecionado;
         
-        // Tamanho
         let tamanhoSelecionado = '--';
         let preco = 0;
         this.tamanhoRadios.forEach(radio => {
@@ -554,20 +515,12 @@ class PedidoController {
         this.resumoTamanho.textContent = tamanhoSelecionado;
         this.resumoPreco.textContent = `R$ ${preco.toFixed(2)}`;
         this.resumoTotal.textContent = `R$ ${preco.toFixed(2)}`;
-        
-        // ID da compra
-        if (this.modoEdicao && this.pedidoEditando) {
-            this.resumoIdCompra.textContent = `ID: ${this.pedidoEditando.idCompra}`;
-        } else {
-            this.resumoIdCompra.textContent = 'ID: --';
-        }
     }
 
     validarFormulario() {
         let valido = true;
         let mensagens = [];
-        
-        // Validar nome do cliente
+                                                                            //validações
         if (!this.nomeCliente.value.trim()) {
             mensagens.push('Por favor, insira o nome do cliente');
             this.nomeCliente.focus();
@@ -578,14 +531,12 @@ class PedidoController {
             valido = false;
         }
         
-        // Validar chá selecionado
         const chaSelecionado = document.querySelector('input[name="tipo-cha"]:checked');
         if (!chaSelecionado) {
             mensagens.push('Por favor, selecione um tipo de chá');
             valido = false;
         }
         
-        // Validar tamanho selecionado
         const tamanhoSelecionado = document.querySelector('input[name="tamanho"]:checked');
         if (!tamanhoSelecionado) {
             mensagens.push('Por favor, selecione um tamanho de copo');
@@ -614,7 +565,6 @@ class PedidoController {
             let resultado;
             
             if (this.modoEdicao) {
-                // Para edição, envie TODOS os dados para o backend
                 const dadosAtualizacao = {
                     cliente: pedidoData.cliente,
                     tipoCha: this.pedidoService.mapearTipoChaParaBackend(pedidoData.cha),
@@ -624,15 +574,15 @@ class PedidoController {
                 
                 resultado = await this.pedidoService.atualizarPedido(this.pedidoEditando.id, dadosAtualizacao);
                 this.toastService.mostrar(
-                    `Pedido ${resultado.idCompra} atualizado com sucesso!`,
+                    `Pedido ID ${resultado.id} atualizado com sucesso!`,
                     'sucesso'
                 );
                 this.cancelarEdicao();
             } else {
-                // Criação normal
+                                //criar pedido
                 resultado = await this.pedidoService.criarPedido(pedidoData);
                 this.toastService.mostrar(
-                    `Pedido ${resultado.idCompra} criado com sucesso!<br>
+                    `Pedido ID ${resultado.id} criado com sucesso!<br>
                     Cliente: ${resultado.cliente}<br>
                     Valor: R$ ${resultado.preco.toFixed(2)}`,
                     'sucesso'
@@ -653,14 +603,10 @@ class PedidoController {
     prepararEdicao(pedido) {
         this.modoEdicao = true;
         this.pedidoEditando = pedido;
-        
-        // Preencher formulário COMPLETO
         this.pedidoId.value = pedido.id;
         this.nomeCliente.value = pedido.cliente;
         this.observacoes.value = pedido.observacoes || '';
         
-        // CORREÇÃO: Selecionar chá CORRETAMENTE
-        // Mapeia do frontend para o valor do radio button
         const chaMap = {
             'cha-verde': 'cha-verde',
             'manga-morango': 'manga-morango', 
@@ -675,7 +621,7 @@ class PedidoController {
             radio.checked = (radio.value === chaValue);
         });
         
-        // CORREÇÃO: Selecionar tamanho CORRETAMENTE
+        
         const tamanhoMap = {
             'pequeno': 'pequeno',
             'medio': 'medio',
@@ -690,12 +636,11 @@ class PedidoController {
             radio.checked = (radio.value === tamanhoValue);
         });
         
-        // Atualizar interface
+                        //editar/atualizar algum item na interface
         this.formTitle.innerHTML = '<i class="fas fa-edit"></i> Editar Pedido';
         this.btnSubmit.innerHTML = '<i class="fas fa-save"></i> Salvar Alterações';
         this.btnCancelar.style.display = 'inline-flex';
         
-        // Atualizar resumo com os NOVOS valores
         this.atualizarResumo();
         this.atualizarSelecaoCha();
         this.mostrarAba('criar');
@@ -720,7 +665,6 @@ class PedidoController {
         this.atualizarSelecaoCha();
     }
 
-    // Lista de pedidos
     async atualizarListaPedidos() {
         const filtros = {
             cliente: this.filterCliente.value.trim(),
@@ -760,15 +704,14 @@ class PedidoController {
             <div class="pedido-header">
                 <div class="pedido-info">
                     <h3>${this.chaNomes[pedido.cha]}</h3>
-                    <span class="pedido-id-display">${pedido.idCompra}</span>
+                    <span class="pedido-cliente">
+                        <i class="fas fa-user"></i> ${pedido.cliente}
+                    </span>
+                    <span class="pedido-id-display">${pedido.id}</span>
                 </div>
                 <div class="pedido-status" style="background-color: ${status.cor}20; color: ${status.cor}; border-left-color: ${status.cor}">
                     <i class="fas ${status.icon}"></i> ${status.nome}
                 </div>
-            </div>
-            
-            <div class="pedido-cliente">
-                <i class="fas fa-user"></i> ${pedido.cliente}
             </div>
             
             <div class="pedido-details">
@@ -791,7 +734,7 @@ class PedidoController {
                     <strong>Observações:</strong> ${pedido.observacoes}
                 </div>
             ` : ''}
-            
+                                                                                                
             <div class="pedido-footer">
                 <div class="pedido-total">R$ ${pedido.preco.toFixed(2)}</div>
                 <div class="pedido-actions">
@@ -814,7 +757,7 @@ class PedidoController {
             </div>
         `;
         
-        // Configurar eventos do card
+        
         const deleteBtn = card.querySelector('.delete-btn');
         const editBtn = card.querySelector('.edit-btn');
         const statusSelect = card.querySelector('.status-select');
@@ -831,7 +774,7 @@ class PedidoController {
             const pedidoAtualizado = await this.pedidoService.atualizarStatusPedido(id, novoStatus);
             if (pedidoAtualizado) {
                 this.toastService.mostrar(
-                    `Status do pedido ${pedidoAtualizado.idCompra} atualizado para: ${this.statusInfo[novoStatus].nome}`,
+                    `Status do pedido ID ${pedidoAtualizado.id} atualizado para: ${this.statusInfo[novoStatus].nome}`,
                     'info'
                 );
                 await this.atualizarListaPedidos();
@@ -862,7 +805,7 @@ class PedidoController {
         try {
             const estatisticas = await this.pedidoService.obterEstatisticas();
             if (estatisticas.total === 0) {
-                this.toastService.mostrar('Não há pedidos para limpar.', 'info');
+                this.toastService.mostrar('Não há pedidos para limpar.', 'info');               //excluir todos os pedidos
                 return;
             }
             
@@ -882,14 +825,14 @@ class PedidoController {
     // Interface
     async atualizarInterface() {
         try {
-            // Atualizar estatísticas
+                               // Interface
             const estatisticas = await this.pedidoService.obterEstatisticas();
             this.totalPedidos.textContent = estatisticas.total;
             this.pedidosHoje.textContent = estatisticas.hoje;
             this.receitaHoje.textContent = `R$ ${estatisticas.receitaHoje.toFixed(2)}`;
             this.totalReceita.textContent = `R$ ${estatisticas.receitaTotal.toFixed(2)}`;
             
-            // Atualizar lista se estiver visível
+            
             if (this.verPedidosSection.classList.contains('active')) {
                 await this.atualizarListaPedidos();
             }
@@ -906,14 +849,9 @@ class PedidoController {
             minute: '2-digit' 
         });
     }
-
-    atualizarDataHora() {
-        const agora = new Date();
-        this.dataHora.textContent = agora.toLocaleDateString('pt-BR') + ' ' + agora.toLocaleTimeString('pt-BR');
-    }
 }
 
-// Inicializar aplicação quando o DOM estiver pronto
-document.addEventListener('DOMContentLoaded', () => {
+
+document.addEventListener('DOMContentLoaded', () => {               //inicialização do dom
     new PedidoController();
 });

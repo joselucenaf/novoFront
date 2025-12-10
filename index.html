@@ -1,3 +1,5 @@
+<!--José Lucena e Myrlla Matos -->
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -8,7 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <header class="header">
+    <header class="header">                 <!-- Cabeçalho e logo -->
         <div class="logo-container">
             <img src="assets/BubbleLogo.png" alt="Logo Bubble Tea SLZ" class="logo">
             <h1 class="store-name">Bubble Tea SLZ - Sistema de Pedidos</h1>
@@ -20,7 +22,6 @@
     </header>
 
     <main class="main-content">
-        <!-- Aba Criar/Editar Pedido -->
         <section class="tab-content active" id="criar-pedido">
             <div class="form-container">
                 <h2 id="form-title"><i class="fas fa-plus-square"></i> Novo Pedido</h2>
@@ -36,7 +37,7 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group">                                                    <!-- Colocando os produtos no html -->
                         <label><i class="fas fa-mug-hot"></i> Selecionar Chá *</label>
                         <div class="cha-options">
                             <div class="cha-card" data-cha="cha-verde">
@@ -45,7 +46,7 @@
                                 </div>
                                 <div class="cha-info">
                                     <h3>Chá Verde</h3>
-                                    <p>Chá verde tradicional com pearls de tapioca.</p>
+                                    <p>Chá verde tradicional com pérolas de tapioca.</p>
                                     <div class="cha-selector">
                                         <input type="radio" id="cha-verde" name="tipo-cha" value="cha-verde" required>
                                         <label for="cha-verde">Selecionar</label>
@@ -131,14 +132,13 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="observacoes"><i class="fas fa-sticky-note"></i> Observações</label>
+                        <label for="observacoes"><i class="fas fa-sticky-note"></i> Observações</label>             <!-- gerar observações para o pedido -->
                         <textarea id="observacoes" placeholder="Alguma observação especial para o pedido? (opcional)" rows="3"></textarea>
                     </div>
 
                     <div class="form-summary">
                         <div class="summary-header">
                             <h3><i class="fas fa-receipt"></i> Resumo do Pedido</h3>
-                            <div class="pedido-id-display" id="resumo-id-compra">ID: --</div>
                         </div>
                         
                         <div class="summary-details">
@@ -148,7 +148,7 @@
                             </div>
                             <div class="summary-item">
                                 <span>Chá:</span>
-                                <span id="resumo-cha">--</span>
+                                <span id="resumo-cha">--</span>                         <!-- Resumo dos pedidos -->
                             </div>
                             <div class="summary-item">
                                 <span>Tamanho:</span>
@@ -181,8 +181,8 @@
             </div>
         </section>
 
-        <!-- Aba Ver Pedidos -->
-        <section class="tab-content" id="ver-pedidos">
+        
+        <section class="tab-content" id="ver-pedidos">                                      <!-- Parte para ver pedidos -->
             <div class="pedidos-container">
                 <div class="pedidos-header">
                     <h2><i class="fas fa-clipboard-list"></i> Pedidos Registrados</h2>
@@ -196,7 +196,7 @@
                             <select id="filter-status">
                                 <option value="all">Todos</option>
                                 <option value="pendente">Pendentes</option>
-                                <option value="preparando">Preparando</option>
+                                <option value="preparando">Preparando</option>              <!-- Filtrar por status -->
                                 <option value="pronto">Prontos</option>
                                 <option value="entregue">Entregues</option>
                             </select>
@@ -217,7 +217,7 @@
                 </div>
 
                 <div class="pedidos-grid" id="pedidos-grid">
-                    <!-- Pedidos serão carregados aqui!! -->
+                                                                            <!-- os pedidos são carregados aqui -->
                     <div class="no-pedidos" id="no-pedidos">
                         <i class="fas fa-mug-hot"></i>
                         <h3>Nenhum pedido registrado</h3>
@@ -234,7 +234,7 @@
                         <div class="stat">
                             <span class="stat-value" id="pedidos-hoje">0</span>
                             <span class="stat-label">Hoje</span>
-                        </div>
+                        </div>                                                                  <!-- Fluxo do caixa -->
                         <div class="stat">
                             <span class="stat-value" id="receita-hoje">R$ 0,00</span>
                             <span class="stat-label">Receita Hoje</span>
@@ -254,19 +254,6 @@
             </div>
         </section>
     </main>
-
-    <footer class="footer">
-        <div class="footer-content">
-            <div class="footer-info">
-                <span><i class="fas fa-cogs"></i> Sistema de Pedidos v2.0 - CRUD Completo</span>
-                <span><i class="fas fa-clock"></i> <span id="data-hora">--:--:--</span></span>
-            </div>
-            <div class="footer-copyright">
-                <p>© 2023 Bubble Tea SLZ - Sistema de Gerenciamento de Pedidos</p>
-            </div>
-        </div>
-    </footer>
-
-    <script src="script.js"></script>
+    <script src="script.js"></script>      <!-- incorporando o JS ao HTML -->
 </body>
 </html>
